@@ -1,6 +1,6 @@
 
-import generateToken from "../config/token";
-import User from "../models/user.model";
+import generateToken from "../config/token.js";
+import User from "../models/user.model.js";
 import bcrypt from 'bcryptjs'
 
 
@@ -13,11 +13,11 @@ import bcrypt from 'bcryptjs'
     const existEmail = await User.findOne({email})
 
     if(existEmail){
-        res.status(400).json({message:"Email already exist"})
+       return res.status(400).json({message:"Email already exist"})
     }
 
      if(password.length<6){
-        res.status(400).json({message:"Password must be 6 letters long"})
+       return res.status(400).json({message:"Password must be at least 6 characters long"})
      }
 
      const hashedpassword = await  bcrypt.hash(password,10)
