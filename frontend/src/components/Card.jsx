@@ -12,7 +12,12 @@ function Card({image}) {
     hover:shadow-2xl hover:shadow-gray-500 hover:border-2 hover:border-white
  border-[#b6b6b6] rounded-2xl overflow-hidden cursor-pointer 
  ${selectedImage==image? "border-8 border-white shadow-2xl shadow-amber-50" :null } `} 
-     onClick={()=>setselectedImage(image)} >
+     onClick={()=>{
+      setselectedImage(image)
+      setfrontendImage(null)
+      setbackendImage(null)
+      
+      }} >
       
         <img src={image} className='h-full object-cover' />
 

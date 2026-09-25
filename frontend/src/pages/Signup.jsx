@@ -13,6 +13,7 @@ import axios from 'axios'
     const [showpassword,setshowpassword] = useState(false)
     const [name,setName] =useState("")
     const [email,setEmail] = useState("")
+     const [loading,setloading] = useState(false)
     const [password,setPasssword] = useState("")
     const [error,seterror] = useState("")
 
@@ -21,6 +22,7 @@ import axios from 'axios'
        
       e.preventDefault()
       seterror("")
+      setloading(true)
 
      try {
        let result = await axios.post( `${serverUrl}/api/auth/signup`,{
@@ -31,11 +33,13 @@ import axios from 'axios'
 
        console.log(result.data);
        setuserdata(result.data)
-       navigate('/cutomize')
+       setloading(false)
+       navigate('/customize')
        
      } catch (error) {
          console.log(error);
          setuserdata(null)
+         setloading(false)
          seterror(error.response.data.message)
          
      }
@@ -58,7 +62,7 @@ import axios from 'axios'
    className="w-[95%]  h-[7%] bg-transparent  text-white
    text-[60px] placeholder-gray-300 outline-none border-2
     border-white font-semibold rounded-full 
-   px-[40px] py-[12px] " onChange={(e)=>setName(e.target.value)} value={name}/>
+   px-[40px] py-[12px] "  required onChange={(e)=>setName(e.target.value)} value={name}/>
 
    <input type="email" placeholder="Enter your Email" 
     className="w-[95%]  h-[7%] bg-transparent  text-white
@@ -89,7 +93,8 @@ import axios from 'axios'
 
       {error.length>0 && <p className="text-red-400 text-[60px]" >{error}</p>}
        <button className="max-w-[400px] w-[400px] max-h-[400px] h-[160px] bg-white
-       text-[60px] cursor-pointer font-bold rounded-full p-[12px] mt-[50px]"  >Sign up</button>
+       text-[60px] cursor-pointer font-bold rounded-full p-[12px] mt-[50px]"
+        disabled={loading} >{loading? "Loading..." : "Sign up"}</button>
     
      <p className="text-white text-[60px]">Already have an account ?<span className="text-blue-400
       font-semibold cursor-pointer ml-[12px]" onClick={()=>navigate('/signin')} >Sign in</span></p>

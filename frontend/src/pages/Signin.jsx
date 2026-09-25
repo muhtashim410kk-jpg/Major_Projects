@@ -8,11 +8,12 @@ import axios from 'axios'
 
  function Signin(){
  
-    const {serverUr,userdata,setuserdata} = useContext(userdatacontext)
+    const {serverUrl,userdata,setuserdata} = useContext(userdatacontext)
     const navigate = useNavigate()
     const [showpassword,setshowpassword] = useState(false)
    
     const [email,setEmail] = useState("")
+    const [loading,setloading] = useState(false)
     const [password,setPasssword] = useState("")
     const [error,seterror] = useState("")
 
@@ -21,6 +22,7 @@ import axios from 'axios'
        
       e.preventDefault()
       seterror("")
+      setloading(true)
 
      try {
        let result = await axios.post( `${serverUrl}/api/auth/signin`,{
@@ -30,11 +32,13 @@ import axios from 'axios'
        }, {withCredentials:true} )
 
        console.log(result.data);
+       setloading(false)
        setuserdata(result.data)
        navigate('/')
        
      } catch (error) {
          console.log(error);
+         setloading(false)
          setuserdata(null)
          seterror(error.response.data.message)
          
@@ -84,7 +88,8 @@ import axios from 'axios'
 
       {error.length>0 && <p className="text-red-400 text-[60px]" >{error}</p>}
        <button className="max-w-[400px] w-[400px] max-h-[400px] h-[160px] bg-white
-       text-[60px] cursor-pointer font-bold rounded-full p-[12px] mt-[50px]"  >Sign In</button>
+       text-[60px] cursor-pointer font-bold rounded-full p-[12px] mt-[50px]" 
+       disabled={loading} >{loading?"Loading..." :  "Sign In"}</button>
     
      <p className="text-white text-[60px]">Want to create a new account ?<span className="text-blue-400
       font-semibold cursor-pointer ml-[12px]" onClick={()=>navigate('/signup')} >Sign Up</span></p>
