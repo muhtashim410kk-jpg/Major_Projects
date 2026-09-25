@@ -8,7 +8,7 @@ import axios from 'axios'
 
  function Signup(){
  
-    const {serverUrl} = useContext(userdatacontext)
+    const {serverUrl,userdata,setuserdata} = useContext(userdatacontext)
     const navigate = useNavigate()
     const [showpassword,setshowpassword] = useState(false)
     const [name,setName] =useState("")
@@ -30,9 +30,12 @@ import axios from 'axios'
        }, {withCredentials:true} )
 
        console.log(result.data);
+       setuserdata(result.data)
+       navigate('/cutomize')
        
      } catch (error) {
          console.log(error);
+         setuserdata(null)
          seterror(error.response.data.message)
          
      }

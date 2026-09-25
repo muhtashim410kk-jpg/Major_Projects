@@ -8,7 +8,7 @@ import axios from 'axios'
 
  function Signin(){
  
-    const {serverUrl} = useContext(userdatacontext)
+    const {serverUr,userdata,setuserdata} = useContext(userdatacontext)
     const navigate = useNavigate()
     const [showpassword,setshowpassword] = useState(false)
    
@@ -30,9 +30,12 @@ import axios from 'axios'
        }, {withCredentials:true} )
 
        console.log(result.data);
+       setuserdata(result.data)
+       navigate('/')
        
      } catch (error) {
          console.log(error);
+         setuserdata(null)
          seterror(error.response.data.message)
          
      }

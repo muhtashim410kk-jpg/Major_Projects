@@ -12,9 +12,14 @@ import User from '../models/user.model.js'
 
         return res.status(200).json(user)
         
-    } catch (error) {
-         return res.status(400).json({message:"Get current user error"})
-    }
+    }catch (error) {
+    console.log("CURRENT USER ERROR:", error);
+
+    return res.status(500).json({
+        message: "Get current user error",
+        error: error.message
+    });
+}
 
   }
 
