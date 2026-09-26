@@ -9,6 +9,7 @@ import image4 from '../assets/chat10.png'
 import image5 from '../assets/chat8.png'
 import { userdatacontext } from '../context/Usercontext';
 import {Navigate, useNavigate}  from 'react-router-dom'
+import { IoArrowBackOutline } from "react-icons/io5";
 
 
 
@@ -31,6 +32,10 @@ import {Navigate, useNavigate}  from 'react-router-dom'
      <div className='w-full h-[100vh] bg-gradient-to-t from-[black] to-[#0b0250] 
      flex justify-center items-center flex-col' >
        
+         <IoArrowBackOutline className='text-white w-[90px] h-[90px] absolute top-[70px] left-[100px] 
+         cursor-pointer'  onClick={()=>navigate('/')} />
+                
+
        <h1 className='text-white text-[100px] mb-[60px] text-center'>Select your
          <span className=' ml-[32px] text-[#9898e5f4]'>Assistant Image</span></h1>
        <div className='w-[90%] max-w-[60%] flex justify-center items-center flex-wrap gap-[40px] p-[20px]'> 
