@@ -6,6 +6,7 @@ import authRouter from './routes/user.routes.js'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import currentuserRouter from './routes/currentuser.route.js'
+import geminiResponse from './gemini.js'
 
 
 
@@ -26,7 +27,17 @@ app.use("/api/auth",authRouter)
 app.use("/api/user",currentuserRouter)
 app.use(cookieParser())
 
+app.get("/", async (req, res) => {
 
+    console.log("QUERY:", req.query);
+    console.log("PROMPT:", req.query.prompt);
+
+    let prompt = req.query.prompt;
+
+    let data = await geminiResponse(prompt);
+
+    res.json(data);
+});
 
 app.listen(port,()=>{
     connectDB()
