@@ -29,6 +29,26 @@ const  [userdata,setuserdata] =useState(null)
        
     }
 
+    async function geminiResponse(command){
+
+      try {
+
+        const result = await axios.post(`${serverUrl}/api/user/asktoassistant`,{command},
+          {withCredentials:true})
+               
+        return result.data
+      } catch (error) {
+  console.log(error)
+
+  return {
+    type: "general",
+    userInput: "",
+    response: "I am temporarily unavailable. Please try again later."
+  }
+}
+
+    }
+
     useEffect(()=>{
  
       handleCurrentUser()
@@ -37,7 +57,7 @@ const  [userdata,setuserdata] =useState(null)
 
   const value ={
     serverUrl,userdata,setuserdata,frontendImage,setfrontendImage,backendImage,setbackendImage,
-    selectedImage,setselectedImage
+    selectedImage,setselectedImage,geminiResponse
   }
 
   return (

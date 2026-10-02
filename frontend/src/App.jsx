@@ -20,7 +20,7 @@ import Customize2 from "./pages/Customize2";
      <Route  path="/" element={(userdata?.assistantImage && 
      userdata?.assistantName)?<Home />: <Navigate to={'/customize'} /> } />
 
-     <Route  path="/signup"  element={!userdata? <Signup /> : <Navigate to={'/customize'} />} />
+     <Route  path="/signup"  element={!userdata? <Signup /> : <Navigate to={'/'} />} />
 
      <Route path="/signin"  element={!userdata?<Signin />: <Navigate to={'/'} />}  />
 
