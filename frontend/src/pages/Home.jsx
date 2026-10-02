@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useContext } from 'react'
 import { userdatacontext } from '../context/Usercontext'
 import { useNavigate } from 'react-router-dom'
@@ -10,6 +10,11 @@ function Home() {
     useContext(userdatacontext)
 
   const navigate = useNavigate()
+  const [listening,setlistening] = useState(false)
+  const isSpeakingRef = useRef(false)  
+  const recognitionRef = useRef(null) 
+  const synth = window.speechSynthesis 
+ 
 
   async function handleLogout() {
     try {
@@ -27,9 +32,29 @@ function Home() {
     }
   }
 
+  const startRecoginition = ()=>{
+   
+ try {
+          recognitionRef.current?.start();
+          setlistening(true)
+
+  
+ } catch (error) {
+    if(!error.message.includes("start")){
+      console.error("Recoginition error",error);
+    }
+ }
+
+  };
+
   const speak = (text) => {
     const utterance = new SpeechSynthesisUtterance(text)
-    window.speechSynthesis.speak(utterance)
+    isSpeakingRef.current = true
+    utterance.onend=()=>{
+      isSpeakingRef.current = false
+      startRecoginition()
+    }
+    synth.speak(utterance)
   }
 
 
@@ -216,6 +241,62 @@ function Home() {
     recognition.continuous = true
     recognition.lang = "en-US"
 
+    recognitionRef.current = recognition
+
+    const isRecoginizingRef = {current:false} 
+
+     function safeRecoginition(){
+          
+          if(!isSpeakingRef.current && !isRecoginizingRef.current)
+
+        try {
+                  recognition.start();
+                  console.log("Recoginition Requested to start");                 
+                  
+        } catch (error) {
+             if(error.name!== "InvalidStateError"){
+              console.error("Start Error:",error);
+              
+             }
+        }
+
+     }
+
+     recognition.onstart = ()=>{
+      console.log("Recoginiton started");
+      isRecoginizingRef.current = true;
+      setlistening(true);
+      
+     };
+
+     recognition.onend = ()=>{
+      console.log("Recoginition Ended");
+      isRecoginizingRef.current = false
+      setlistening(false)
+       
+       if(!isSpeakingRef.current){
+      setTimeout(() => {
+          safeRecoginition()
+      }, 1000); //delay avoid rapid loop
+     }
+
+     };
+
+       recognition.onerror = (event)=>{
+      console.warn("Recoginition Error",event.error);
+      isRecoginizingRef.current = false
+      setlistening(false);
+      if(event.error!== "aborted" && !isSpeakingRef.current){
+        setTimeout(() => {
+           safeRecoginition();
+        }, 1000);
+      }
+       
+      
+
+     };
+
+    
 
     recognition.onresult = async (e) => {
 
@@ -225,13 +306,11 @@ function Home() {
       console.log("heard :" + transcript)
 
 
-     if (
-  userdata?.assistantName &&
-  transcript
-    .toLowerCase()
-    .includes(userdata.assistantName.toLowerCase())
-) {
-
+ if ( userdata?.assistantName &&  transcript.toLowerCase().includes(userdata.assistantName.toLowerCase()) ){  
+         
+       recognition.stop()
+       isRecoginizingRef.current = false
+       setlistening(false)
 
         const simpleCommandHandled =
           handleSimpleCommand(transcript)
@@ -252,13 +331,25 @@ function Home() {
       }
     }
 
+const fallback = setInterval(() => {
 
-    recognition.start()
+  if(!isSpeakingRef.current && !isRecoginizingRef.current){
+    safeRecoginition()
+  }
+  
+}, 10000);
 
+safeRecoginition()
 
-    return () => {
-      recognition.stop()
-    }
+   return ()=>{
+      recognition.stop()        
+      setlistening(false)
+      isRecoginizingRef.current = false
+      clearInterval(fallback)
+
+   }
+
+   
 
   }, [])
 
