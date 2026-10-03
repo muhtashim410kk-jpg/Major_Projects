@@ -63,6 +63,8 @@ import moment from 'moment'
         try {
               const {command} = req.body
               const user = await User.findById(req.userId);
+              user.history.push(command)
+              user.save()
               const userName = user.name
               const assistantName = user.assistantName
               const result = await geminiResponse(command,assistantName,userName)

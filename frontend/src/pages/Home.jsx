@@ -3,6 +3,8 @@ import { useContext } from 'react'
 import { userdatacontext } from '../context/Usercontext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import aiImg from '..//assets/ai.gif'
+import userImg from '..//assets/user4.gif'
 
 function Home() {
 
@@ -11,6 +13,8 @@ function Home() {
 
   const navigate = useNavigate()
   const [listening,setlistening] = useState(false)
+  const [usertext,setusertext] = useState("")
+  const [aitext,setaitext] = useState("")
   const isSpeakingRef = useRef(false)  
   const recognitionRef = useRef(null) 
   const synth = window.speechSynthesis 
@@ -51,6 +55,7 @@ function Home() {
     const utterance = new SpeechSynthesisUtterance(text)
     isSpeakingRef.current = true
     utterance.onend=()=>{
+      setaitext("")
       isSpeakingRef.current = false
       startRecoginition()
     }
@@ -68,7 +73,13 @@ function Home() {
       command.includes("what time") ||
       command.includes("current time") ||
       command.includes("tell me the time") ||
-      command.includes("tell the time")
+      command.includes("tell the time") ||
+      command.includes("jarvis btao time kia ho raha ha")||
+      command.includes("jarvis btao time kia hoa ha")||
+      command.includes("jarvis current time btao")||
+      command.includes("jarvis time btao")||
+      command.includes("jarvis time kia ho raha ha")
+
     ) {
 
       const time = new Date().toLocaleTimeString("en-US", {
@@ -91,7 +102,13 @@ function Home() {
       command.includes("current date") ||
       command.includes("tell me the date") ||
       command.includes("tell the date") ||
-      command.includes("tell date")
+      command.includes("tell date")||
+      command.includes("aj kia date ha")||
+      command.includes("date kia ha")||
+      command.includes("tareekh kia ha")||
+      command.includes("aj ki date btao")
+
+
     ) {
 
       const date = new Date().toLocaleDateString("en-US", {
@@ -251,7 +268,7 @@ function Home() {
 
         try {
                   recognition.start();
-                  console.log("Recoginition Requested to start");                 
+                                 
                   
         } catch (error) {
              if(error.name!== "InvalidStateError"){
@@ -263,14 +280,14 @@ function Home() {
      }
 
      recognition.onstart = ()=>{
-      console.log("Recoginiton started");
+      
       isRecoginizingRef.current = true;
       setlistening(true);
       
      };
 
      recognition.onend = ()=>{
-      console.log("Recoginition Ended");
+      
       isRecoginizingRef.current = false
       setlistening(false)
        
@@ -283,7 +300,7 @@ function Home() {
      };
 
        recognition.onerror = (event)=>{
-      console.warn("Recoginition Error",event.error);
+      
       isRecoginizingRef.current = false
       setlistening(false);
       if(event.error!== "aborted" && !isSpeakingRef.current){
@@ -302,6 +319,9 @@ function Home() {
 
       const transcript =
         e.results[e.results.length - 1][0].transcript.trim()
+
+        setusertext(transcript)
+        setaitext("")
 
       console.log("heard :" + transcript)
 
@@ -328,6 +348,8 @@ function Home() {
         }
 
         handleCommand(data)
+        setaitext(data.response)
+        setusertext("")
       }
     }
 
@@ -355,7 +377,7 @@ safeRecoginition()
 
 
   return (
-    <div className='w-full h-[100vh] bg-gradient-to-t from-[black] to-[#0b0250]
+    <div className='w-full h-[100vh] bg-gradient-to-t from-[black] to-[#090241]
      flex justify-center items-center flex-col gap-[40px] relative'>
 
 
@@ -392,7 +414,10 @@ safeRecoginition()
       <h1 className='text-white text-[60px] font-semibold'>
         I'm {userdata?.assistantName}
       </h1>
-
+      {!aitext && <img src={userImg} className='w-[200px]' />}
+      {aitext && <img src={aiImg} className='w-[200px] h-[200px]'  ></img>}
+             
+      <h1 className='text-white font-semibold text-[40px]'>{usertext?usertext:aitext?aitext:null}</h1>
 
     </div>
   )

@@ -31,6 +31,8 @@ Instructions:
  Type meanings:
 
 -"general": if it's a factual or informational question.
+ aur agar koi aisa question pouchta ha jiska answer tumhe pta ha usko bhi general ki category me rkho
+ bs short answer dena
 -"google_search": if user wants to search something on Google
 -"youtube_search": if user wants to search something on YouTube.
 -"youtube_play": if user wants to directly play a video or song.
