@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import aiImg from '..//assets/ai.gif'
 import userImg from '..//assets/user4.gif'
+import { TfiAlignRight } from "react-icons/tfi";
+import { RxCross1 } from "react-icons/rx";
+import { AiOutlineSetting } from "react-icons/ai";
 
 function Home() {
 
@@ -15,6 +18,7 @@ function Home() {
   const [listening,setlistening] = useState(false)
   const [usertext,setusertext] = useState("")
   const [aitext,setaitext] = useState("")
+  const [hamburger,sethamburger] = useState(false)
   const isSpeakingRef = useRef(false)  
   const recognitionRef = useRef(null) 
   const synth = window.speechSynthesis 
@@ -340,6 +344,12 @@ function Home() {
         }
 
         const data = await geminiResponse(transcript)
+        if(data.history){
+          setuserdata(prev =>({
+            ...prev,
+            history:data.history
+          }))
+        }
 
         console.log(data)
 
@@ -378,27 +388,59 @@ safeRecoginition()
 
   return (
     <div className='w-full h-[100vh] bg-gradient-to-t from-[black] to-[#090241]
-     flex justify-center items-center flex-col gap-[40px] relative'>
+     flex justify-center items-center flex-col gap-[40px] relative overflow-x-hidden'>
+
+     <TfiAlignRight className=' text-white absolute  w-[40px] h-[40px]
+     top-[70px] left-[70px] cursor-pointer' onClick={()=>sethamburger(true)} />
+     
 
 
-      <button
+     <div className={`fixed inset-0 z-50 bg-[#00000025] 
+      backdrop-blur-lg  p-[20px] flex flex-col overflow-x-hidden
+       gap-[20px] items-start ${hamburger?"translate-x-0 ":"translate-x-full " }`} >
+
+         <RxCross1 className=' text-white absolute  w-[25px] h-[25px]
+     top-[20px] right-[20px] cursor-pointer  ' onClick={()=>sethamburger(false)} />
+
+
+
+       <button
+        className="max-w-[400px] w-[400px] max-h-[200px] h-[60px] bg-white
+        text-[30px] cursor-pointer font-bold rounded-full p-[12px] 
+         top-[300px] right-[20px]  "
+        onClick={() => navigate('/customize')}
+      >
+        Customize your Assistant
+      </button>
+
+          <button
         className="max-w-[200px] w-[200px] max-h-[200px] h-[60px] bg-white
-        text-[30px] cursor-pointer font-bold rounded-full p-[12px] mt-[50px]
-        absolute top-[200px] right-[80px]"
+        text-[30px] cursor-pointer font-bold rounded-full p-[12px] 
+         top-[200px] right-[80px]  "
         onClick={() => handleLogout()}
       >
         Logout
       </button>
 
 
-      <button
-        className="max-w-[400px] w-[400px] max-h-[200px] h-[60px] bg-white
-        text-[30px] cursor-pointer font-bold rounded-full p-[12px] mt-[50px]
-        absolute top-[300px] right-[20px]"
-        onClick={() => navigate('/customize')}
-      >
-        Customize your Assistant
-      </button>
+      
+
+      <div className='w-full h-[2px] bg-gray-400'> </div>
+  
+      <h1 className='text-white text-[50px] font-semibold'>History</h1>
+
+      <div className='w-full h-[60%] overflow-auto flex flex-col gap-[20px]'>
+        {userdata.history?.map((his,index)=>( 
+             <span key={index} className='text-white text-[30px] truncate'>{his}</span>
+
+       ))}
+
+      </div>
+
+     </div>
+
+
+     
 
 
       <div className='w-[10vw] h-[20vh] rounded-4xl flex justify-center items-center overflow-hidden shadow-2xl'>

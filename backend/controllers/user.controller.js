@@ -64,7 +64,7 @@ import moment from 'moment'
               const {command} = req.body
               const user = await User.findById(req.userId);
               user.history.push(command)
-              user.save()
+             await user.save()
               const userName = user.name
               const assistantName = user.assistantName
               const result = await geminiResponse(command,assistantName,userName)
@@ -119,6 +119,7 @@ import moment from 'moment'
                                 type,
                                 userInput : gemResult.userInput,
                                 response: gemResult.response,
+                                history: user.history
                             });
 
                             default :
