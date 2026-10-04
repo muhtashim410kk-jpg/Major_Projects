@@ -31,8 +31,8 @@ import bcrypt from 'bcryptjs'
      res.cookie("token",token,{
         httpOnly:true,
         maxAge:8*24*60*60*1000,
-        sameSite:"strict",
-        secure:false
+        sameSite:"None",
+        secure:true
      })
 
      return res.status(201).json(user)
@@ -71,8 +71,8 @@ import bcrypt from 'bcryptjs'
      res.cookie("token",token,{
         httpOnly:true,
         maxAge:8*24*60*60*1000,
-        sameSite:"strict",
-        secure:false
+        sameSite:"None",
+        secure:true
      })
 
      return res.status(200).json(user)
