@@ -7,7 +7,7 @@ import aiImg from '..//assets/ai.gif'
 import userImg from '..//assets/user4.gif'
 import { TfiAlignRight } from "react-icons/tfi";
 import { RxCross1 } from "react-icons/rx";
-import { AiOutlineSetting } from "react-icons/ai";
+
 
 function Home() {
 
@@ -15,14 +15,15 @@ function Home() {
     useContext(userdatacontext)
 
   const navigate = useNavigate()
-  const [listening,setlistening] = useState(false)
-  const [usertext,setusertext] = useState("")
-  const [aitext,setaitext] = useState("")
-  const [hamburger,sethamburger] = useState(false)
-  const isSpeakingRef = useRef(false)  
-  const recognitionRef = useRef(null) 
-  const synth = window.speechSynthesis 
- 
+  const [listening, setlistening] = useState(false)
+  const [usertext, setusertext] = useState("")
+  const [aitext, setaitext] = useState("")
+  const [hamburger, sethamburger] = useState(false)
+  const isSpeakingRef = useRef(false)
+  const recognitionRef = useRef(null)
+  const isRecoginizingRef = useRef(false)
+  const synth = window.speechSynthesis
+
 
   async function handleLogout() {
     try {
@@ -40,30 +41,42 @@ function Home() {
     }
   }
 
-  const startRecoginition = ()=>{
-   
- try {
-          recognitionRef.current?.start();
-          setlistening(true)
 
-  
- } catch (error) {
-    if(!error.message.includes("start")){
-      console.error("Recoginition error",error);
+  const startRecoginition = () => {
+
+    if (!isSpeakingRef.current && !isRecoginizingRef.current) {
+
+      try {
+        recognitionRef.current?.start();
+        console.log("Recoginition requested to start");
+
+      } catch (error) {
+        if (error.name !== "InvalidStateError") {
+          console.error("Start error :", error);
+        }
+      }
+
     }
- }
 
   };
+
 
   const speak = (text) => {
     const utterance = new SpeechSynthesisUtterance(text)
     isSpeakingRef.current = true
-    utterance.onend=()=>{
+
+    utterance.onend = () => {
       setaitext("")
-      isSpeakingRef.current = false
-      startRecoginition()
+      isSpeakingRef.current = false;
+
+      setTimeout(() => {
+        startRecoginition()
+      }, 800);
+
     }
-    synth.speak(utterance)
+
+    synth.cancel();
+    synth.speak(utterance);
   }
 
 
@@ -78,12 +91,11 @@ function Home() {
       command.includes("current time") ||
       command.includes("tell me the time") ||
       command.includes("tell the time") ||
-      command.includes("jarvis btao time kia ho raha ha")||
-      command.includes("jarvis btao time kia hoa ha")||
-      command.includes("jarvis current time btao")||
-      command.includes("jarvis time btao")||
+      command.includes("jarvis btao time kia ho raha ha") ||
+      command.includes("jarvis btao time kia hoa ha") ||
+      command.includes("jarvis current time btao") ||
+      command.includes("jarvis time btao") ||
       command.includes("jarvis time kia ho raha ha")
-
     ) {
 
       const time = new Date().toLocaleTimeString("en-US", {
@@ -106,13 +118,11 @@ function Home() {
       command.includes("current date") ||
       command.includes("tell me the date") ||
       command.includes("tell the date") ||
-      command.includes("tell date")||
-      command.includes("aj kia date ha")||
-      command.includes("date kia ha")||
-      command.includes("tareekh kia ha")||
+      command.includes("tell date") ||
+      command.includes("aj kia date ha") ||
+      command.includes("date kia ha") ||
+      command.includes("tareekh kia ha") ||
       command.includes("aj ki date btao")
-
-
     ) {
 
       const date = new Date().toLocaleDateString("en-US", {
@@ -133,7 +143,7 @@ function Home() {
       command.includes("which day") ||
       command.includes("today's day") ||
       command.includes("todays day") ||
-      command.includes("tell me the day") 
+      command.includes("tell me the day")
     ) {
 
       const day = new Date().toLocaleDateString("en-US", {
@@ -164,7 +174,6 @@ function Home() {
     }
 
 
-    // Nothing matched
     return false
   }
 
@@ -245,221 +254,289 @@ function Home() {
   }
 
 
-  useEffect(() => {
+ useEffect(() => {
 
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition
 
-    if (!SpeechRecognition) {
-      console.log(
-        "Speech Recognition is not supported in this browser"
-      )
+  if (!SpeechRecognition) {
+    console.log("Speech Recognition is not supported in this browser")
+    return
+  }
+
+  const recognition = new SpeechRecognition()
+
+  recognition.continuous = true
+  recognition.lang = "en-US"
+  recognition.interimResults = false
+
+  recognitionRef.current = recognition
+
+  let isMounted = true
+
+  const startTimeout = setTimeout(() => {
+
+    if ( isMounted &&  !isSpeakingRef.current && !isRecoginizingRef.current ) {
+
+      try {
+        recognition.start()
+        
+
+      } catch (error) {
+
+        if (error.name !== "InvalidStateError") {
+          console.error("Start error:", error)
+        }
+
+      }
+    }
+
+  }, 1000)
+
+
+  recognition.onstart = () => {
+
+    isRecoginizingRef.current = true
+    setlistening(true)
+  
+
+  }
+
+
+  recognition.onend = () => {
+
+    isRecoginizingRef.current = false
+    setlistening(false)
+
+    if (isMounted && !isSpeakingRef.current) {
+
+      setTimeout(() => {
+
+        if (isMounted) {
+
+          try {
+
+            recognition.start()
+            
+
+          } catch (error) {
+
+            if (error.name !== "InvalidStateError") {
+              console.error("Restart error:", error)
+            }
+
+          }
+
+        }
+
+      }, 1000)
+
+    }
+
+  }
+
+
+  recognition.onerror = (event) => {
+
+    if (event.error !== "no-speech") {
+        console.warn("Recognition error:", event.error)
+    }
+
+    isRecoginizingRef.current = false
+    setlistening(false)
+}
+
+
+  recognition.onresult = async (e) => {
+
+    const transcript = e.results[e.results.length - 1][0].transcript.trim()
+
+    // Show question immediately
+    setusertext(transcript)
+  
+    // SIMPLE COMMANDS
+   
+    const simpleCommandHandled =
+      handleSimpleCommand(transcript)
+
+    if (simpleCommandHandled) {
+
+      recognition.stop()
+      isRecoginizingRef.current = false
+      setlistening(false)
+
       return
     }
 
-    const recognition = new SpeechRecognition()
+    // ASSISTANT NAME CHECK
 
-    recognition.continuous = true
-    recognition.lang = "en-US"
+    const containsAssistantName =transcript.toLowerCase().includes(userdata?.assistantName?.toLowerCase())
 
-    recognitionRef.current = recognition
+    if (containsAssistantName) {
 
-    const isRecoginizingRef = {current:false} 
+      console.log("7. Calling Gemini...")
 
-     function safeRecoginition(){
-          
-          if(!isSpeakingRef.current && !isRecoginizingRef.current)
-
-        try {
-                  recognition.start();
-                                 
-                  
-        } catch (error) {
-             if(error.name!== "InvalidStateError"){
-              console.error("Start Error:",error);
-              
-             }
-        }
-
-     }
-
-     recognition.onstart = ()=>{
-      
-      isRecoginizingRef.current = true;
-      setlistening(true);
-      
-     };
-
-     recognition.onend = ()=>{
-      
+      recognition.stop()
       isRecoginizingRef.current = false
       setlistening(false)
-       
-       if(!isSpeakingRef.current){
-      setTimeout(() => {
-          safeRecoginition()
-      }, 1000); //delay avoid rapid loop
-     }
 
-     };
+      const data = await geminiResponse(transcript)
 
-       recognition.onerror = (event)=>{
-      
-      isRecoginizingRef.current = false
-      setlistening(false);
-      if(event.error!== "aborted" && !isSpeakingRef.current){
-        setTimeout(() => {
-           safeRecoginition();
-        }, 1000);
+      console.log("8. Gemini returned:", data)
+
+      if (!data) {
+        return
       }
-       
-      
 
-     };
+      // Update history
+      if (data.history) {
+        setuserdata(prev => ({
+          ...prev,
+          history: data.history
+        }))
+
+      }
+
+      handleCommand(data)
+      setaitext(data.response)
+      setusertext("")
+
+    } else {
+
+      console.log(
+        "7. Gemini NOT called because assistant name was not detected"
+      )
+
+    }
+
+  };
+
+  const greeting = new SpeechSynthesisUtterance(`Hey ${userdata.name},How can I help you !`);
+  greeting.lang ='hi-IN';
+  window.speechSynthesis.speak(greeting);
+
+
+  return () => {
+
+    isMounted = false
+
+    clearTimeout(startTimeout)
+
+    recognition.stop()
+
+    setlistening(false)
+
+    isRecoginizingRef.current = false
 
     
 
-    recognition.onresult = async (e) => {
-
-      const transcript =
-        e.results[e.results.length - 1][0].transcript.trim()
-
-        setusertext(transcript)
-        setaitext("")
-
-      console.log("heard :" + transcript)
-
-
- if ( userdata?.assistantName &&  transcript.toLowerCase().includes(userdata.assistantName.toLowerCase()) ){  
-         
-       recognition.stop()
-       isRecoginizingRef.current = false
-       setlistening(false)
-
-        const simpleCommandHandled =
-          handleSimpleCommand(transcript)
-
-        if (simpleCommandHandled) {
-          return
-        }
-
-        const data = await geminiResponse(transcript)
-        if(data.history){
-          setuserdata(prev =>({
-            ...prev,
-            history:data.history
-          }))
-        }
-
-        console.log(data)
-
-        if (!data) {
-          return
-        }
-
-        handleCommand(data)
-        setaitext(data.response)
-        setusertext("")
-      }
-    }
-
-const fallback = setInterval(() => {
-
-  if(!isSpeakingRef.current && !isRecoginizingRef.current){
-    safeRecoginition()
   }
-  
-}, 10000);
 
-safeRecoginition()
-
-   return ()=>{
-      recognition.stop()        
-      setlistening(false)
-      isRecoginizingRef.current = false
-      clearInterval(fallback)
-
-   }
-
-   
-
-  }, [])
+}, [])
 
 
   return (
-    <div className='w-full h-[100vh] bg-gradient-to-t from-[black] to-[#090241]
-     flex justify-center items-center flex-col gap-[40px] relative overflow-x-hidden'>
+    <div  className='w-full min-h-screen h-screen  bg-gradient-to-t from-[black] to-[#090241]
+      flex justify-center items-center flex-col  gap-[25px] sm:gap-[30px] md:gap-[40px]
+      relative overflow-hidden px-4' >
 
-     <TfiAlignRight className=' text-white absolute  w-[40px] h-[40px]
-     top-[70px] left-[70px] cursor-pointer' onClick={()=>sethamburger(true)} />
-     
+      {/* Hamburger */}
+      <TfiAlignRight className='text-white absolute  w-[30px] h-[30px]
+        sm:w-[35px] sm:h-[35px] md:w-[40px] md:h-[40px] top-[25px] left-[25px]
+        sm:top-[40px] sm:left-[40px] md:top-[70px] md:left-[70px] cursor-pointer z-40'
+        onClick={() => sethamburger(true)}  />
 
+      {/* Sidebar / History */}
+      <div className={`fixed inset-0 z-50 bg-[#00000025] backdrop-blur-lg p-[20px]
+        sm:p-[30px] md:p-[40px] flex flex-col transition-transform duration-300
+        gap-[20px] items-start  overflow-hidden  ${hamburger ? "translate-x-0" : "translate-x-full"}`} >
 
-     <div className={`fixed inset-0 z-50 bg-[#00000025] 
-      backdrop-blur-lg  p-[20px] flex flex-col overflow-x-hidden
-       gap-[20px] items-start ${hamburger?"translate-x-0 ":"translate-x-full " }`} >
+        <RxCross1  className='text-white absolute w-[22px] h-[22px]  sm:w-[25px] sm:h-[25px]
+          top-[20px] right-[20px] sm:top-[30px] sm:right-[30px] cursor-pointer'
+          onClick={() => sethamburger(false)}  />
 
-         <RxCross1 className=' text-white absolute  w-[25px] h-[25px]
-     top-[20px] right-[20px] cursor-pointer  ' onClick={()=>sethamburger(false)} />
+        {/* Customize Button */}
+        <button className='w-full  max-w-[400px] h-[50px]  sm:h-[55px]  md:h-[60px]
+          bg-white text-[17px] sm:text-[22px] md:text-[30px]  cursor-pointer  font-bold
+          rounded-full  px-4  py-2  mt-[45px]' onClick={() => navigate('/customize')}  >
+          Customize your Assistant
+        </button>
 
-
-
-       <button
-        className="max-w-[400px] w-[400px] max-h-[200px] h-[60px] bg-white
-        text-[30px] cursor-pointer font-bold rounded-full p-[12px] 
-         top-[300px] right-[20px]  "
-        onClick={() => navigate('/customize')}
-      >
-        Customize your Assistant
-      </button>
-
-          <button
-        className="max-w-[200px] w-[200px] max-h-[200px] h-[60px] bg-white
-        text-[30px] cursor-pointer font-bold rounded-full p-[12px] 
-         top-[200px] right-[80px]  "
-        onClick={() => handleLogout()}
-      >
-        Logout
-      </button>
+        {/* Logout Button */}
+        <button  className='w-full max-w-[200px]  h-[50px]  sm:h-[55px]  md:h-[60px]  bg-white
+          text-[17px]  sm:text-[22px]  md:text-[30px]  cursor-pointer  font-bold  rounded-full
+          px-4 py-2' onClick={() => handleLogout()} >
+          Logout
+        </button>
 
 
-      
+        <div className='w-full h-[2px] bg-gray-400 mt-[5px]' />
 
-      <div className='w-full h-[2px] bg-gray-400'> </div>
-  
-      <h1 className='text-white text-[50px] font-semibold'>History</h1>
 
-      <div className='w-full h-[60%] overflow-auto flex flex-col gap-[20px]'>
-        {userdata.history?.map((his,index)=>( 
-             <span key={index} className='text-white text-[30px] truncate'>{his}</span>
+        <h1 className='text-white text-[28px] sm:text-[38px] md:text-[50px] font-semibold' >
+          History
+        </h1>
 
-       ))}
+        <div className='w-full flex-1  flex flex-col gap-[15px] sm:gap-[20px]
+          min-h-0 overflow-y-auto overflow-x-hidden ' >
+        
+          {userdata.history?.map((his, index) => (
+            <span
+              key={index}
+              className='text-white text-[18px] sm:text-[24px] md:text-[30px] break-words'>
+              {his}
+            </span>
+          ))}
+
+        </div>
 
       </div>
 
-     </div>
 
-
-     
-
-
-      <div className='w-[10vw] h-[20vh] rounded-4xl flex justify-center items-center overflow-hidden shadow-2xl'>
-
+      {/* Assistant Image */}
+      <div
+        className='
+        w-[110px] h-[110px] sm:w-[140px] sm:h-[140px] max-w-[220px] max-h-[220px] rounded-4xl
+        md:w-[170px] md:h-[170px] lg:w-[10vw] lg:h-[20vh]
+          flex justify-center items-center overflow-hidden shadow-2xl'>    
         <img
           src={userdata?.assistantImage}
-          className='object-cover h-full rounded-4xl'
-        />
-
+          className='object-cover w-full h-full rounded-4xl'  />
+        
       </div>
 
-
-      <h1 className='text-white text-[60px] font-semibold'>
+      {/* Assistant Name */}
+      <h1
+        className='text-white font-semibold text-center   leading-tight
+        text-[30px] sm:text-[40px]  md:text-[50px] lg:text-[60px] '>
+      
         I'm {userdata?.assistantName}
+                                     </h1>
+
+      {/* User / AI GIF */}
+      {!aitext && (
+        <img
+          src={userImg}
+          className='w-[130px] sm:w-[160px] md:w-[200px]'
+        />
+      )}
+
+      {aitext && (
+        <img
+          src={aiImg}
+          className='w-[130px] h-[130px]
+          sm:w-[160px] sm:h-[160px]  md:w-[200px] md:h-[200px]'
+        />
+      )}
+
+
+      {/* Response Text */}
+      <h1
+        className='text-white font-semibold max-w-[95%] md:max-w-[85%] break-words
+        text-[20px] sm:text-[28px] md:text-[40px] text-center  '
+      >
+        {usertext ? usertext : aitext ? aitext : null}
       </h1>
-      {!aitext && <img src={userImg} className='w-[200px]' />}
-      {aitext && <img src={aiImg} className='w-[200px] h-[200px]'  ></img>}
-             
-      <h1 className='text-white font-semibold text-[40px]'>{usertext?usertext:aitext?aitext:null}</h1>
 
     </div>
   )
