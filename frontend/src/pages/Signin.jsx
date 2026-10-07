@@ -58,7 +58,7 @@ function Signin() {
     );
 
     setuserdata(result.data);
-    navigate("/");
+    navigate("/customize");
   } catch (error) {
     seterror(error.response?.data?.message || "Google login failed");
   }
@@ -158,7 +158,7 @@ function Signin() {
   id="googleButton"
   className="w-full flex justify-center mt-[10px]"></div>
 
-  
+
 
         <p className="text-white text-[18px] sm:text-[20px] md:text-[24px] text-center">
           Want to create a new account ?
