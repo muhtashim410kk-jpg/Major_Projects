@@ -2,6 +2,9 @@
 import generateToken from "../config/token.js";
 import User from "../models/user.model.js";
 import bcrypt from 'bcryptjs'
+import   {OAuth2Client}    from 'google-auth-library'
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 
  export  async function signup(req,res){
@@ -100,3 +103,47 @@ import bcrypt from 'bcryptjs'
 
 
  }
+
+
+ export async function googleLogin(req, res) {
+  try {
+    const { credential } = req.body;
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload.email_verified) {
+      return res.status(400).json({ message: "Google email is not verified" });
+    }
+
+    const { email, name } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        name: name || "Google User",
+        email
+      });
+    }
+
+    const token = await generateToken(user._id);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      maxAge: 8 * 24 * 60 * 60 * 1000,
+      sameSite: "None",
+      secure: true
+    });
+
+    return res.status(200).json(user);
+
+  } catch (error) {
+    console.log("GOOGLE LOGIN ERROR:", error);
+    return res.status(500).json({ message: "Google login failed" });
+  }
+}

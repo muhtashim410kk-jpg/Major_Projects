@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState,useEffect } from "react";
 import img1 from "../assets/robotbackground.jpg";
 import { IoIosEye } from "react-icons/io";
 import { IoIosEyeOff } from "react-icons/io";
@@ -15,6 +15,56 @@ function Signin() {
   const [loading, setloading] = useState(false);
   const [password, setPasssword] = useState("");
   const [error, seterror] = useState("");
+
+
+  useEffect(() => {
+  const script = document.createElement("script");
+
+  script.src = "https://accounts.google.com/gsi/client";
+  script.async = true;
+  script.defer = true;
+
+  script.onload = () => {
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: handleGoogleLogin,
+    });
+
+    window.google.accounts.id.renderButton(
+      document.getElementById("googleButton"),
+      {
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        width: 300,
+      }
+    );
+  };
+
+  document.body.appendChild(script);
+
+  return () => {
+    document.body.removeChild(script);
+  };
+}, []);
+
+
+   async function handleGoogleLogin(response) {
+  try {
+    const result = await axios.post(
+      `${serverUrl}/api/auth/google`,
+      { credential: response.credential },
+      { withCredentials: true }
+    );
+
+    setuserdata(result.data);
+    navigate("/");
+  } catch (error) {
+    seterror(error.response?.data?.message || "Google login failed");
+  }
+}
+
+
 
   async function handleSignin(e) {
     e.preventDefault();
@@ -103,6 +153,12 @@ function Signin() {
           disabled={loading}  >
           {loading ? "Loading..." : "Sign In"}
         </button>
+
+        <div
+  id="googleButton"
+  className="w-full flex justify-center mt-[10px]"></div>
+
+  
 
         <p className="text-white text-[18px] sm:text-[20px] md:text-[24px] text-center">
           Want to create a new account ?

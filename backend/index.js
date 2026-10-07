@@ -16,8 +16,11 @@ let app = express()
 const port = process.env.PORT || 8000
 
 app.use(cors({
-    origin:"https://voiceassistant-7j68.onrender.com",
-    credentials:true
+    origin: [
+        "http://localhost:5173",
+        "https://voiceassistant-7j68.onrender.com"
+    ],
+    credentials: true
 }))
 app.use(express.json())
 
