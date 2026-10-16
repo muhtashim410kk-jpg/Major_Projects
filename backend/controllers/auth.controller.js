@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import transporter from "../config/nodemailer.js";
+import resend from "../config/resend.js";
 import generateToken from "../config/token.js";
 import User from "../models/user.model.js";
 import bcrypt from 'bcryptjs'
@@ -173,12 +173,16 @@ export async function forgotPassword(req, res) {
     const resetLink =
       `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: user.email,
-      subject: "Reset Your Password",
-      text: `Click this link to reset your password: ${resetLink}`
-    });
+   const { data, error } = await resend.emails.send({
+  from: "Voice Assistant <onboarding@resend.dev>",
+  to: user.email,
+  subject: "Reset Your Password",
+  text: `Click this link to reset your password: ${resetLink}`
+});
+
+if (error) {
+  throw error;
+}
 
     return res.status(200).json({
       message: "If the account exists, a reset email will be sent."
