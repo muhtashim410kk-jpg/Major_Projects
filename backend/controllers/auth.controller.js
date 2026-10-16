@@ -1,4 +1,5 @@
-
+import crypto from "crypto";
+import transporter from "../config/nodemailer.js";
 import generateToken from "../config/token.js";
 import User from "../models/user.model.js";
 import bcrypt from 'bcryptjs'
@@ -145,5 +146,91 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
   } catch (error) {
     console.log("GOOGLE LOGIN ERROR:", error);
     return res.status(500).json({ message: "Google login failed" });
+  }
+}
+
+export async function forgotPassword(req, res) {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(200).json({
+        message: "If the account exists, a reset email will be sent."
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    user.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    await user.save();
+
+    const resetLink =
+      `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: "Reset Your Password",
+      text: `Click this link to reset your password: ${resetLink}`
+    });
+
+    return res.status(200).json({
+      message: "If the account exists, a reset email will be sent."
+    });
+ } catch (error) {
+  console.error("FORGOT PASSWORD ERROR:", error);
+  return res.status(500).json({
+    message: "Unable to process password reset request."
+  });
+}
+
+}
+
+export async function resetPassword(req, res) {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long."
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Reset link is invalid or expired."
+      });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password reset successfully."
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Unable to reset password."
+    });
   }
 }

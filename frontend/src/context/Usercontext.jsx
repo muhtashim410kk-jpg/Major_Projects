@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 
 function Usercontext({children}) {
 
- const serverUrl = "https://geminivoiceassistant.onrender.com"
+const serverUrl = "https://geminivoiceassistant.onrender.com"
 const  [userdata,setuserdata] =useState(null)
   const [frontendImage,setfrontendImage] = useState(null)
     const [backendImage,setbackendImage] = useState(null)

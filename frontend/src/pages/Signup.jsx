@@ -48,15 +48,25 @@ function Signup() {
     >
       <form
         className="w-full max-w-[900px] min-h-[700px] md:min-h-[750px]
-         gap-[25px] md:gap-[35px] backdrop-blur bg-[#000000bc] flex flex-col
-          items-center justify-center shadow-lg shadow-black rounded-b-4xl
-           px-5 sm:px-8 md:px-12 py-8 md:py-10" onSubmit={handleSignup}  >
+gap-[25px] md:gap-[35px] backdrop-blur bg-[#000000bc] flex flex-col
+items-center justify-start shadow-lg shadow-black rounded-b-4xl
+px-5 sm:px-8 md:px-12 pt-10 md:pt-12 pb-8 md:pb-10" onSubmit={handleSignup}  >
 
 
-        <h1 className="text-white text-[32px] sm:text-[42px] md:text-[55px]
-         lg:text-[70px] mb-[15px] font-semibold text-center leading-tight"> Register to
-          <span className="text-blue-400 ml-2 md:ml-5">  Gemini voice assistant </span>
-        </h1>
+  <h1
+  className="w-full text-white text-[28px] sm:text-[38px]
+  md:text-[48px] lg:text-[60px] mb-[15px]
+  font-semibold text-center leading-tight"
+>
+  Register to 
+  <span className="text-blue-400 ml-2 md:ml-4">
+    Voice Assistant
+  </span>
+</h1>
+
+      <p className="text-gray-300 text-base sm:text-lg text-center">
+  You can create your own Voice Assistant.
+</p>
 
 
         <input type="text"  placeholder="Enter your Name"
@@ -104,8 +114,11 @@ function Signup() {
 
 
         <button
-          className="w-full max-w-[300px] h-[60px] md:h-[70px] bg-white text-[22px] 
-          md:text-[28px] cursor-pointer font-bold rounded-full p-3 mt-[10px]"
+          className="w-full max-w-[300px] min-h-[60px] md:min-h-[70px]
+bg-white text-gray-900 text-[22px] md:text-[28px]
+cursor-pointer font-bold rounded-full p-3 mt-[10px]
+transition duration-300 hover:bg-blue-400 hover:text-white
+disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={loading}
         >
 
@@ -116,7 +129,8 @@ function Signup() {
         <p className="text-white text-[18px] sm:text-[20px] md:text-[24px] text-center">
           Already have an account ?
           <span
-            className="text-blue-400 font-semibold cursor-pointer ml-[12px]"
+            className="text-blue-400 font-semibold cursor-pointer ml-2
+            hover:text-blue-300"
             onClick={() => navigate("/signin")}
           >
             Sign in

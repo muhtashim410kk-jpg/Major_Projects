@@ -7,6 +7,7 @@ import { useContext } from "react";
 import { userdatacontext } from "./context/Usercontext";
 import Home from "./pages/Home";
 import Customize2 from "./pages/Customize2";
+import ResetPassword from "./pages/ResetPassword";
 
 
   function App(){
@@ -17,6 +18,8 @@ import Customize2 from "./pages/Customize2";
 
       <Routes>
      
+       <Route path="/reset-password/:token" element={<ResetPassword />} />
+
      <Route  path="/" element={(userdata?.assistantImage && 
      userdata?.assistantName)?<Home />: <Navigate to={'/customize'} /> } />
 

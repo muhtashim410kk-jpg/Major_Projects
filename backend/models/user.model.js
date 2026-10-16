@@ -12,10 +12,17 @@ const Userschema= new mongoose.Schema({
       unique:true
 
    },
-   password:{
+  password:{
     type:String
-    
    },
+
+   resetPasswordToken:{
+    type:String
+   },
+   resetPasswordExpires:{
+    type:Date
+   },
+
    assistantName:{
     type:String
    },
