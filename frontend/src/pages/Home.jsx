@@ -6,23 +6,69 @@ import axios from 'axios'
 import aiImg from '..//assets/ai.gif'
 import userImg from '..//assets/user4.gif'
 import { TfiAlignRight } from "react-icons/tfi";
+import { RiDeleteBin6Line } from "react-icons/ri";
 import { RxCross1 } from "react-icons/rx";
 
 
 function Home() {
 
-  const { userdata, serverUrl, setuserdata, geminiResponse } =
+  const { userdata, serverUrl, setuserdata } =
     useContext(userdatacontext)
 
   const navigate = useNavigate()
   const [listening, setlistening] = useState(false)
   const [usertext, setusertext] = useState("")
   const [aitext, setaitext] = useState("")
-  const [hamburger, sethamburger] = useState(false)
-  const isSpeakingRef = useRef(false)
+ const [hamburger, sethamburger] = useState(false)
+const [selectedChatId, setSelectedChatId] = useState(null)
+const selectedChatIdRef = useRef(null)
+
+const selectedChat = userdata?.chats?.find(
+  chat => chat._id === selectedChatId
+)
+
+useEffect(() => {
+  if (!selectedChatId && userdata?.chats?.length > 0) {
+    const latestChat = userdata.chats[userdata.chats.length - 1];
+
+    setSelectedChatId(latestChat._id);
+    selectedChatIdRef.current = latestChat._id;
+  }
+}, [userdata?.chats, selectedChatId]);
+
+const isSpeakingRef = useRef(false) 
   const recognitionRef = useRef(null)
   const isRecoginizingRef = useRef(false)
   const synth = window.speechSynthesis
+
+
+
+async function handleNewChat() {
+  try {
+    const result = await axios.post(
+      `${serverUrl}/api/user/new-chat`,
+      {},
+      { withCredentials: true }
+    );
+
+    setuserdata(prev => ({
+      ...prev,
+      chats: result.data.chats
+    }));
+
+    setSelectedChatId(result.data.chat._id);
+   
+selectedChatIdRef.current = result.data.chat._id;
+    setusertext("");
+    setaitext("");
+    sethamburger(false);
+
+  } catch (error) {
+    console.log("New chat error:", error);
+  }
+}
+
+
 
 
   async function handleLogout() {
@@ -380,7 +426,26 @@ function Home() {
       isRecoginizingRef.current = false
       setlistening(false)
 
-      const data = await geminiResponse(transcript)
+  if (!selectedChatIdRef.current) {
+  console.log("Please click New Chat first");
+  return;
+}
+
+const result = await axios.post(
+  `${serverUrl}/api/user/asktoassistant`,
+  {
+    command: transcript,
+    chatId: selectedChatIdRef.current
+  },
+  { withCredentials: true }
+);
+
+const data = result.data;
+
+setuserdata(prev => ({
+  ...prev,
+  chats: data.chats
+}));
 
       console.log("8. Gemini returned:", data)
 
@@ -389,13 +454,7 @@ function Home() {
       }
 
       // Update history
-      if (data.history) {
-        setuserdata(prev => ({
-          ...prev,
-          history: data.history
-        }))
-
-      }
+     
 
       handleCommand(data)
       setaitext(data.response)
@@ -436,12 +495,12 @@ function Home() {
 
 
   return (
-    <div  className='w-full min-h-screen h-screen  bg-gradient-to-t from-[black] to-[#090241]
-      flex justify-center items-center flex-col  gap-[25px] sm:gap-[30px] md:gap-[40px]
-      relative overflow-hidden px-4' >
+    <div className="w-full min-h-screen bg-gradient-to-t from-black to-[#050127]
+  flex flex-col items-center gap-6 sm:gap-8
+  relative overflow-x-hidden px-4 py-8 ">
 
       {/* Hamburger */}
-      <TfiAlignRight className='text-white absolute  w-[30px] h-[30px]
+      <TfiAlignRight className='text-white fixed  w-[30px] h-[30px]
         sm:w-[35px] sm:h-[35px] md:w-[40px] md:h-[40px] top-[25px] left-[25px]
         sm:top-[40px] sm:left-[40px] md:top-[70px] md:left-[70px] cursor-pointer z-40'
         onClick={() => sethamburger(true)}  />
@@ -477,16 +536,64 @@ function Home() {
           History
         </h1>
 
+
+
+        <button
+  onClick={handleNewChat}
+  className="w-full max-w-[400px] rounded-full bg-blue-600 text-white p-3 font-semibold"
+>
+  + New Chat
+</button>
+
+
+
         <div className='w-full flex-1  flex flex-col gap-[15px] sm:gap-[20px]
           min-h-0 overflow-y-auto overflow-x-hidden ' >
         
-          {userdata.history?.map((his, index) => (
-            <span
-              key={index}
-              className='text-white text-[18px] sm:text-[24px] md:text-[30px] break-words'>
-              {his}
-            </span>
-          ))}
+{userdata.chats?.map(chat => (
+  <div key={chat._id} className="w-full flex items-center gap-2">
+
+    <span
+      onClick={() => {
+        setSelectedChatId(chat._id);
+        selectedChatIdRef.current = chat._id;
+        sethamburger(false);
+        setusertext("");
+        setaitext("");
+      }}
+      className="flex-1 min-w-0 text-white text-[18px] sm:text-[24px] md:text-[30px] break-words cursor-pointer hover:text-blue-300"
+    >
+      {chat.title}
+    </span>
+
+    <RiDeleteBin6Line
+      className="text-white cursor-pointer shrink-0 hover:text-red-400"
+      onClick={async () => {
+        try {
+          const result = await axios.delete(
+            `${serverUrl}/api/user/delete-chat/${chat._id}`,
+            { withCredentials: true }
+          );
+
+          setuserdata(prev => ({
+            ...prev,
+            chats: result.data.chats
+          }));
+
+          if (selectedChatId === chat._id) {
+            setSelectedChatId(null);
+            selectedChatIdRef.current = null;
+            setusertext("");
+            setaitext("");
+          }
+        } catch (error) {
+          console.log("Delete chat error:", error);
+        }
+      }}
+    />
+
+  </div>
+))}
 
         </div>
 
@@ -497,7 +604,7 @@ function Home() {
       <div
         className='
         w-[110px] h-[110px] sm:w-[140px] sm:h-[140px] max-w-[220px] max-h-[220px] rounded-4xl
-        md:w-[170px] md:h-[170px] lg:w-[10vw] lg:h-[20vh]
+        md:w-[170px] md:h-[170px] lg:w-[10vw] lg:h-[20vh] mt-25
           flex justify-center items-center overflow-hidden shadow-2xl'>    
         <img
           src={userdata?.assistantImage}
@@ -530,13 +637,23 @@ function Home() {
       )}
 
 
-      {/* Response Text */}
-      <h1
-        className='text-white font-semibold max-w-[95%] md:max-w-[85%] break-words
-        text-[20px] sm:text-[28px] md:text-[40px] text-center  '
-      >
-        {usertext ? usertext : aitext ? aitext : null}
-      </h1>
+<div className="w-full max-w-3xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 px-2 py-4">
+  {selectedChat?.messages?.map((message, index) => (
+    <div key={index} className="flex flex-col gap-3">
+
+      <div className="self-end max-w-[90%] bg-blue-600 text-white rounded-2xl p-3 break-words">
+        <p className="font-semibold text-sm mb-1">You</p>
+        {message.question}
+      </div>
+
+      <div className="self-start max-w-[90%] bg-white/10 text-white rounded-2xl p-3 break-words">
+        <p className="font-semibold text-sm mb-1">Assistant</p>
+        {message.response}
+      </div>
+
+    </div>
+  ))}
+</div>
 
     </div>
   )

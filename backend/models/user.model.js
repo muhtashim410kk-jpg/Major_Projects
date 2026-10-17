@@ -29,9 +29,17 @@ const Userschema= new mongoose.Schema({
    assistantImage:{
     type:String
    },
-  history:[
-    {type:String}
-  ]
+chats: [
+  {
+    title: String,
+    messages: [
+      {
+        question: String,
+        response: String
+      }
+    ]
+  }
+]
 
 },{timestamps:true})
 
