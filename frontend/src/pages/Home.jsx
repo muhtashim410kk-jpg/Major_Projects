@@ -39,6 +39,8 @@ useEffect(() => {
 const isSpeakingRef = useRef(false) 
   const recognitionRef = useRef(null)
   const isRecoginizingRef = useRef(false)
+  const restartTimeoutRef = useRef(null)
+  const isProcessingRef = useRef(false)
   const synth = window.speechSynthesis
 
 
@@ -88,23 +90,36 @@ selectedChatIdRef.current = result.data.chat._id;
   }
 
 
-  const startRecoginition = () => {
-
-    if (!isSpeakingRef.current && !isRecoginizingRef.current) {
-
-      try {
-        recognitionRef.current?.start();
-        console.log("Recoginition requested to start");
-
-      } catch (error) {
-        if (error.name !== "InvalidStateError") {
-          console.error("Start error :", error);
-        }
+const startRecoginition = () => {
+  if (
+    !isSpeakingRef.current &&
+    !isRecoginizingRef.current &&
+    !isProcessingRef.current
+  ) {
+    try {
+      recognitionRef.current?.start()
+      console.log("Recognition requested to start")
+    } catch (error) {
+      if (error.name !== "InvalidStateError") {
+        console.error("Start error:", error)
       }
-
     }
+  }
+}
 
-  };
+const scheduleRecognitionRestart = () => {
+  clearTimeout(restartTimeoutRef.current)
+
+  if (isProcessingRef.current) return
+
+  restartTimeoutRef.current = setTimeout(() => {
+    restartTimeoutRef.current = null
+
+    if (!isProcessingRef.current) {
+      startRecoginition()
+    }
+  }, 800)
+}
 
 
   const speak = (text) => {
@@ -115,9 +130,7 @@ selectedChatIdRef.current = result.data.chat._id;
       setaitext("")
       isSpeakingRef.current = false;
 
-      setTimeout(() => {
-        startRecoginition()
-      }, 800);
+     scheduleRecognitionRestart()
 
     }
 
@@ -299,6 +312,14 @@ selectedChatIdRef.current = result.data.chat._id;
     }
   }
 
+  const userdataRef = useRef(userdata)
+const serverUrlRef = useRef(serverUrl)
+
+useEffect(() => {
+  userdataRef.current = userdata
+  serverUrlRef.current = serverUrl
+}, [userdata, serverUrl])
+
 
  useEffect(() => {
 
@@ -320,24 +341,6 @@ selectedChatIdRef.current = result.data.chat._id;
 
   let isMounted = true
 
-  const startTimeout = setTimeout(() => {
-
-    if ( isMounted &&  !isSpeakingRef.current && !isRecoginizingRef.current ) {
-
-      try {
-        recognition.start()
-        
-
-      } catch (error) {
-
-        if (error.name !== "InvalidStateError") {
-          console.error("Start error:", error)
-        }
-
-      }
-    }
-
-  }, 1000)
 
 
   recognition.onstart = () => {
@@ -349,48 +352,28 @@ selectedChatIdRef.current = result.data.chat._id;
   }
 
 
-  recognition.onend = () => {
+recognition.onend = () => {
+  isRecoginizingRef.current = false
+  setlistening(false)
 
-    isRecoginizingRef.current = false
-    setlistening(false)
+  if (isMounted && !isSpeakingRef.current) {
+    scheduleRecognitionRestart()
+  }
+}
 
-    if (isMounted && !isSpeakingRef.current) {
 
-      setTimeout(() => {
-
-        if (isMounted) {
-
-          try {
-
-            recognition.start()
-            
-
-          } catch (error) {
-
-            if (error.name !== "InvalidStateError") {
-              console.error("Restart error:", error)
-            }
-
-          }
-
-        }
-
-      }, 1000)
-
-    }
-
+recognition.onerror = (event) => {
+  if (event.error !== "no-speech") {
+    console.warn("Recognition error:", event.error);
   }
 
+  isRecoginizingRef.current = false;
+  setlistening(false);
 
-  recognition.onerror = (event) => {
-
-    if (event.error !== "no-speech") {
-        console.warn("Recognition error:", event.error)
-    }
-
-    isRecoginizingRef.current = false
-    setlistening(false)
-}
+  if (isMounted && !isSpeakingRef.current) {
+    scheduleRecognitionRestart();
+  }
+};
 
 
   recognition.onresult = async (e) => {
@@ -416,49 +399,64 @@ selectedChatIdRef.current = result.data.chat._id;
 
     // ASSISTANT NAME CHECK
 
-    const containsAssistantName =transcript.toLowerCase().includes(userdata?.assistantName?.toLowerCase())
+    const assistantName =
+  userdataRef.current?.assistantName?.toLowerCase()
+
+const containsAssistantName =
+  !!assistantName &&
+  transcript.toLowerCase().includes(assistantName)
 
     if (containsAssistantName) {
 
       console.log("7. Calling Gemini...")
 
-      recognition.stop()
-      isRecoginizingRef.current = false
-      setlistening(false)
-
-  if (!selectedChatIdRef.current) {
+if (!selectedChatIdRef.current) {
   console.log("Please click New Chat first");
   return;
 }
 
-const result = await axios.post(
-  `${serverUrl}/api/user/asktoassistant`,
-  {
-    command: transcript,
-    chatId: selectedChatIdRef.current
-  },
-  { withCredentials: true }
-);
+isProcessingRef.current = true;
+clearTimeout(restartTimeoutRef.current);
 
-const data = result.data;
+recognition.stop();
+isRecoginizingRef.current = false;
+setlistening(false);
 
-setuserdata(prev => ({
-  ...prev,
-  chats: data.chats
-}));
+try {
+  const result = await axios.post(
+    `${serverUrlRef.current}/api/user/asktoassistant`,
+    {
+      command: transcript,
+      chatId: selectedChatIdRef.current
+    },
+    { withCredentials: true }
+  );
 
-      console.log("8. Gemini returned:", data)
+  const data = result.data;
 
-      if (!data) {
-        return
-      }
+  if (!data) {
+    return;
+  }
 
-      // Update history
-     
+  setuserdata(prev => ({
+    ...prev,
+    chats: data.chats
+  }));
 
-      handleCommand(data)
-      setaitext(data.response)
-      setusertext("")
+  console.log("8. Gemini returned:", data);
+
+  handleCommand(data);
+  setaitext(data.response);
+  setusertext("");
+
+} catch (error) {
+  console.error("Gemini request error:", error);
+  setusertext("Sorry, something went wrong. Please try again.");
+
+} finally {
+  isProcessingRef.current = false;
+  scheduleRecognitionRestart();
+}
 
     } else {
 
@@ -470,26 +468,48 @@ setuserdata(prev => ({
 
   };
 
-  const greeting = new SpeechSynthesisUtterance(`Hey ${userdata.name},How can I help you !`);
-  greeting.lang ='hi-IN';
-  window.speechSynthesis.speak(greeting);
+const greeting = new SpeechSynthesisUtterance(
+  `Hey ${userdataRef.current?.name || "there"}, how can I help you?`
+);
+
+greeting.lang = 'en-US';
+
+isSpeakingRef.current = true;
+
+greeting.onend = () => {
+  isSpeakingRef.current = false;
+  scheduleRecognitionRestart();
+};
+
+synth.cancel();
+synth.speak(greeting);
 
 
-  return () => {
 
-    isMounted = false
 
-    clearTimeout(startTimeout)
+return () => {
+  isMounted = false
 
+  clearTimeout(restartTimeoutRef.current)
+  synth.cancel()
+
+  recognition.onstart = null
+  recognition.onend = null
+  recognition.onerror = null
+  recognition.onresult = null
+
+  try {
     recognition.stop()
-
-    setlistening(false)
-
-    isRecoginizingRef.current = false
-
-    
-
+  } catch (error) {
+    console.log("Recognition cleanup:", error)
   }
+
+  isSpeakingRef.current = false
+  isProcessingRef.current = false
+  isRecoginizingRef.current = false
+  setlistening(false)
+}
+
 
 }, [])
 
@@ -550,7 +570,7 @@ setuserdata(prev => ({
         <div className='w-full flex-1  flex flex-col gap-[15px] sm:gap-[20px]
           min-h-0 overflow-y-auto overflow-x-hidden ' >
         
-{userdata.chats?.map(chat => (
+{userdata?.chats?.map(chat => (
   <div key={chat._id} className="w-full flex items-center gap-2">
 
     <span
@@ -580,12 +600,16 @@ setuserdata(prev => ({
             chats: result.data.chats
           }));
 
-          if (selectedChatId === chat._id) {
-            setSelectedChatId(null);
-            selectedChatIdRef.current = null;
-            setusertext("");
-            setaitext("");
-          }
+        if (selectedChatIdRef.current === chat._id) {
+  const remainingChats = result.data.chats;
+  const latestChat = remainingChats[remainingChats.length - 1];
+
+  setSelectedChatId(latestChat?._id || null);
+  selectedChatIdRef.current = latestChat?._id || null;
+
+  setusertext("");
+  setaitext("");
+}
         } catch (error) {
           console.log("Delete chat error:", error);
         }
@@ -637,7 +661,8 @@ setuserdata(prev => ({
       )}
 
 
-<div className="w-full max-w-3xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 px-2 py-4">
+<div className="w-full max-w-3xl flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden 
+[-ms-overflow-style:none] [scrollbar-width:none] flex flex-col gap-4 px-2 py-4">
   {selectedChat?.messages?.map((message, index) => (
     <div key={index} className="flex flex-col gap-3">
 

@@ -14,4 +14,4 @@ import upload from '../middlewares/multer.js'
   currentuserRouter.delete('/delete-chat/:chatId', isAuth, deleteChat)
 
 
-  export default currentuserRouter
+  export default currentuserRouter 
